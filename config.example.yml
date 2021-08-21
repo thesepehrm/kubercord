@@ -1,0 +1,6 @@
+discord:
+  webhook: https://discord.com/api/webhooks/1234567890123456789012345678901234567890/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+k8s:
+  namespace: ""
+  config_dir: "/home/cloud/.kube/"
+  interval: 15
