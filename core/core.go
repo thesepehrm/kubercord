@@ -82,8 +82,7 @@ func (kc *KuberCord) Watch() {
 
 func (kc *KuberCord) watchForEvents() {
 	for event := range kc.podsWatcher.ResultChan() {
-		if event.Object.GetObjectKind().GroupVersionKind().Kind == "Pod" {
-			pod := event.Object.(*v1.Pod)
+		if pod, ok := event.Object.(*v1.Pod); ok {
 			kc.handlePod(pod)
 		}
 	}
@@ -106,7 +105,7 @@ func (kc *KuberCord) watch() {
 
 		rawLogs, err := resp.Raw()
 		if err != nil {
-			logrus.WithError(err).Panic("Failed to get logs")
+			logrus.WithError(err).Error("Failed to get logs")
 		}
 		logs := string(rawLogs)
 		a := parseLogs(pod.Name, logs)
