@@ -62,8 +62,8 @@ func (dh *DiscordHandler) SendPodStatus(service, status, reason string) error {
 		Embeds: []*discordhook.Embed{
 			{
 				Title:       service,
-				Description: "Pod status changed to: " + status + "\nReason: " + reason,
-				Color:       0x00FF00,
+				Description: "Pod status changed to: " + status + "\nMessage: " + reason,
+				Color:       0xffd700,
 			},
 		},
 	}, nil, "")
