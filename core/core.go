@@ -94,7 +94,7 @@ func (kc *KuberCord) watch() {
 	pods, err := kc.clientset.CoreV1().Pods(config.Config.K8s.Namespace).List(context.Background(), metav1.ListOptions{})
 
 	if err != nil {
-		logrus.WithError(err).Panic("Failed to list pods")
+		logrus.WithError(err).Error("Failed to list pods")
 	}
 	logrus.WithField("pods-count", len(pods.Items)).Info("Number of pods")
 
@@ -105,7 +105,7 @@ func (kc *KuberCord) watch() {
 
 		rawLogs, err := resp.Raw()
 		if err != nil {
-			logrus.WithError(err).Error("Failed to get logs")
+			logrus.WithError(err).Warn("Failed to get logs")
 		}
 		logs := string(rawLogs)
 		a := parseLogs(pod.Name, logs)
@@ -162,6 +162,10 @@ func (kc *KuberCord) handlePod(newPod *v1.Pod) {
 		if p.Status.Phase == newPod.Status.Phase {
 			return
 		}
+	} else if !ok && newPod.Status.Phase == v1.PodRunning {
+		// avoid posting extra notifications for already running pods
+		kc.podsCache[newPod.Name] = newPod
+		return
 	}
 
 	kc.podsCache[newPod.Name] = newPod
