@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"errors"
-	"regexp"
 	"strings"
 	"time"
 
@@ -48,6 +47,7 @@ func Init() (*KuberCord, error) {
 		clientset: clientset,
 		dh:        dh,
 		q:         make(chan struct{}),
+		podsCache: make(map[string]*v1.Pod),
 	}, nil
 }
 
@@ -57,6 +57,7 @@ func (kc *KuberCord) Start() {
 	if err != nil {
 		logrus.WithError(err).Panic("Failed to watch pods")
 	}
+	logrus.Info("Watching pods")
 	go kc.Watch()
 	go kc.watchForEvents()
 }
@@ -81,8 +82,10 @@ func (kc *KuberCord) Watch() {
 
 func (kc *KuberCord) watchForEvents() {
 	for event := range kc.podsWatcher.ResultChan() {
-		pod := event.Object.(*v1.Pod)
-		kc.handlePod(pod)
+		if event.Object.GetObjectKind().GroupVersionKind().Kind == "Pod" {
+			pod := event.Object.(*v1.Pod)
+			kc.handlePod(pod)
+		}
 	}
 }
 
@@ -153,32 +156,6 @@ func parseLogs(service, logs string) *Alert {
 		}*/
 	}
 	return nil
-}
-
-type Params struct {
-	Time  time.Time
-	Level string
-	Msg   string
-}
-
-func extractParams(line string) (*Params, error) {
-	r := regexp.MustCompile(`time="(.*)"\s+level=(.*)\s+msg="(.*)"`)
-	matches := r.FindStringSubmatch(line)
-	if len(matches) == 0 {
-		return nil, errNoMatches
-	}
-
-	t, err := time.Parse("2006-01-02T15:04:05Z", matches[1])
-	if err != nil {
-		return nil, err
-	}
-
-	return &Params{
-		Time:  t,
-		Level: matches[2],
-		Msg:   matches[3],
-	}, nil
-
 }
 
 func (kc *KuberCord) handlePod(newPod *v1.Pod) {
